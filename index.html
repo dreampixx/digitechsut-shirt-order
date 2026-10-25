@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <title>พรีออเดอร์เสื้อช็อป DIGITECH</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#021410;--ink:#e8fff4;--mut:#9bc7b3;--g1:#052e1f;--g2:#0b5d3b;--g3:#34d399;--g4:#6ee7b7;--gap:40px;--glass:rgba(11,93,59,.22);--line:rgba(52,211,153,.35);--bad:#ff8a8a}
 @media(min-width:900px){:root{--gap:64px}}
@@ -164,6 +165,68 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
 @keyframes pulse{50%{box-shadow:0 0 26px rgba(110,231,183,.65)}}
 .st{transition:transform .2s,box-shadow .2s}.st:hover{transform:translateY(-3px);box-shadow:0 0 32px rgba(52,211,153,.28)}
 #tId{cursor:pointer;text-decoration:underline dotted}
+/* ===== Live Embroidery Preview ===== */
+@font-face{font-family:"SUT";src:local("SUT"),url("SUT.woff2") format("woff2"),url("SUT.ttf") format("truetype");font-display:swap}
+
+/* --- โครงสร้าง Grid ---
+   มือถือ : 3 กรอบเรียงแนวตั้ง
+   คอมพิวเตอร์ (>=900px) : แถวบน = อกเสื้อ + แขนเสื้อ (50% / 50%)  แถวล่าง = หลังเสื้อ กว้างเต็มความกว้างรวมของแถวบน */
+.pv-row{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin-top:var(--gap)}
+@media(min-width:900px){.pv-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.pv-box.pv-wide{grid-column:1 / -1}}
+.pv-box{display:flex;flex-direction:column;margin:0;min-width:0}
+.pv-box h2{font-size:1.05rem;margin-bottom:10px}
+
+/* --- กรอบรูป (Stage) ---
+   ล็อกอัตราส่วนด้วย aspect-ratio ผ่านตัวแปร --ar  (กว้าง / สูง)  เช่น 4 / 3, 16 / 9, 1 / 1
+   - อกเสื้อ + แขนเสื้อ ใช้ --ar เท่ากัน จึงสูงเท่ากันเป๊ะ
+   - หลังเสื้อ : สคริปต์จะอ่านสัดส่วนจริงของไฟล์ Preview_Back.png แล้วตั้ง --ar ให้อัตโนมัติ (ค่าด้านล่างใช้เป็นค่าสำรอง)
+   ตัวอักษรอ้างอิงขนาดจากความกว้างกรอบ (หน่วย cqw = 1% ของความกว้างกรอบ) จึงย่อ-ขยายตามรูปทุกอุปกรณ์ ไม่เบี้ยว */
+.pv-stage{position:relative;width:100%;aspect-ratio:var(--ar,4 / 3);overflow:hidden;border-radius:12px;container-type:inline-size;
+ background-color:#0f3d26;background-size:100% 100%;background-position:center;background-repeat:no-repeat;
+ background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.035) 0 2px,rgba(0,0,0,.05) 2px 4px),var(--pv-img,none)}
+#pvChest{--pv-img:url("Preview_Front.png");--ar:4 / 3}
+#pvSide{--pv-img:url("Preview_Side.png");--ar:4 / 3}
+#pvBack{--pv-img:url("Preview_Back.png");--ar:16 / 9}
+
+/* --- บล็อกข้อความปัก (1 บล็อก = ทุกบรรทัดใช้ฟอนต์/ขนาด/ระยะบรรทัดเดียวกัน) ---
+   ===== วิธีขยับตำแหน่ง =====
+   --x : ตำแหน่งแนวนอนของ "กึ่งกลางบล็อก" นับจากขอบซ้ายของรูป เช่น 50% = กลางรูป, 30% = ไปทางซ้าย, 70% = ไปทางขวา
+   --y : ตำแหน่งแนวตั้งของ "กึ่งกลางบล็อก" นับจากขอบบนของรูป เช่น 50% = กลางรูป, 40% = ขยับขึ้น, 60% = ขยับลง
+   ===== วิธีย่อ-ขยายตัวอักษร =====
+   --fs : ขนาดฟอนต์ (หน่วย cqw = % ของความกว้างกรอบรูป) เช่น 4.6cqw ; เพิ่มเลข = ใหญ่ขึ้น, ลดเลข = เล็กลง
+   --lh : ระยะบรรทัด (ไม่มีหน่วย) เช่น 1.05 = ชิดมาก, 1.25 = ห่างขึ้น  (ทุกบรรทัดเท่ากัน)
+   แก้เฉพาะ 4 ค่านี้ในกฎ #pvChest .pv-block (อก) และ #pvSide .pv-block (แขน) ด้านล่างได้เลย */
+.pv-block{position:absolute;left:var(--x,50%);top:var(--y,50%);transform:translate(-50%,-50%);width:max-content;max-width:94%;
+ margin:0;padding:0;text-align:center;font-weight:bold;font-size:var(--fs,4.6cqw);line-height:var(--lh,1.1);letter-spacing:-.02em;text-transform:uppercase;
+ color:#fbf5e1;pointer-events:none;user-select:none;
+ /* Blend If : opacity 0.85-0.90 ให้ลายผ้าทวิลเขียวทะลุตัวอักษร
+    (ถ้าอยากลอง multiply ให้เติม mix-blend-mode:multiply; — แต่สีครีมจะเข้มลงมาก ควรใช้ร่วมกับสีตัวอักษรที่สว่างขึ้น) */
+ opacity:.88;
+ /* Drop Shadow : มุม 88°, Distance 3px, Size 7px, Opacity 61% */
+ filter:drop-shadow(0px 3px 7px rgba(0,0,0,0.61));
+ /* Bevel & Emboss : ไฮไลท์ขาวบนซ้าย + เงาคมดำล่างขวา */
+ text-shadow:-1px -1px 1px rgba(255,255,255,0.5),1px 1px 1px rgba(0,0,0,0.5)}
+.pv-block p{margin:0;padding:0;white-space:nowrap}   /* ไม่มีระยะห่างระหว่างบรรทัด */
+.pv-block p:empty{display:none}
+#pvChest .pv-block{--x:23%;--y:65%;--fs:2.3cqw;--lh:1.1;font-family:"SUT","Orbitron",sans-serif}
+#pvSide .pv-block{--x:50%;--y:40%;--fs:5.5cqw;--lh:1.1;font-family:"Bookman Old Style","Bookman","URW Bookman","ITC Bookman",Georgia,serif;color:#f7efd6}
+/* --- ข้อความหลังเสื้อ (แสดงตามที่เลือกในช่อง "รูปแบบการปักด้านหลัง"; เลือก "ไม่ปัก" = ภาพเปล่า) ---
+   ใช้ฟอนต์ Prompt ตัวหนา แก้ตำแหน่ง/ขนาดได้ที่ 4 ค่าด้านล่างนี้เท่านั้น:
+   --x  : กึ่งกลางข้อความนับจากขอบซ้ายของรูป  (50% = กลางรูป, 40% = ซ้ายขึ้น, 60% = ขวาขึ้น)
+   --y  : กึ่งกลางข้อความนับจากขอบบนของรูป    (30% = ใกล้ขอบบน, 50% = กลางรูป, 70% = ลงล่าง)
+   --fs : ขนาดตัวอักษร หน่วย cqw = % ของความกว้างกรอบรูป (เลขมาก = ใหญ่, เลขน้อย = เล็ก) เช่น 6cqw
+   --lh : ระยะบรรทัด (เช่น 1.1)
+   ถ้าข้อความยาวเกินกรอบ ระบบย่อให้พอดีอัตโนมัติ  ขนาดและตำแหน่งเป็น % จึงไม่เพี้ยนในทุกอุปกรณ์ */
+#pvBack .pv-block{--x:49%;--y:50%;--fs:5.5cqw;--lh:1.1;font-family:"Prompt","Noto Sans Thai",sans-serif;font-weight:700}
+/* แขนเสื้อและหลังเสื้อ: แสดงตัวพิมพ์เล็ก/ใหญ่ตามที่เลือก/กรอก (ไม่แปลงเป็นตัวพิมพ์ใหญ่) ส่วนอกเสื้อยังเป็นตัวพิมพ์ใหญ่ทั้งหมด */
+#pvSide .pv-block,#pvBack .pv-block{text-transform:none}
+.pv-note{margin:10px 0 0;font-size:.8rem;color:var(--mut);text-align:center}
+
+/* ===== Auto Banner Slider (12:4) ===== */
+.bn{position:relative;overflow:hidden;aspect-ratio:12 / 4;margin:-18px -18px 16px;border-radius:15px 15px 0 0;background:linear-gradient(135deg,var(--g1),var(--g2))}
+.bn-track{display:flex;height:100%;transition:transform .6s ease}
+.bn-track img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;display:block}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -196,14 +259,19 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
  </section>
 
  <section class="rv card"><h2>ราคา</h2><div class="price" id="priceTxt"></div><p class="note">ปักชื่อ DIGITECH ด้านหลังเสื้อ +50 บาท · ใส่ AKA ไม่เพิ่มราคา</p>
-  <h2 style="margin-top:14px">ขั้นตอนการสั่ง</h2><ol class="how"><li>กรอกข้อมูล</li><li>ตรวจทานรายการ</li><li>โอนเงินผ่าน QR แล้วแนบสลิป</li><li>รับรหัสออเดอร์</li></ol></section>
+  <h2 style="margin-top:14px">ขั้นตอนการสั่ง</h2><ol class="how"><li>กรอกข้อมูล</li><li>ตรวจสอบรายการ</li><li>โอนเงินผ่าน QR แล้วแนบสลิป</li><li>รับรหัสออเดอร์</li></ol></section>
 
  <section class="rv"><div class="term" id="term"><div id="t1"></div><div id="t2"></div></div></section>
  </div>
 
 </div>
 <div id="v1" class="view" hidden>
- <section id="formSec" class="card"><h2>กรอกข้อมูลสั่งจอง</h2>
+ <section id="formSec" class="card">
+ <!-- แบนเนอร์สไลด์ 12:4 : อยากเพิ่มรูป = ก๊อปบรรทัด <img ...> แล้วเปลี่ยนชื่อไฟล์ใน src / ลบบรรทัดเพื่อเอารูปออก -->
+ <div class="bn" id="bn" aria-label="แบนเนอร์"><div class="bn-track" id="bnTrack">
+  <img src="Banner.jpg" alt="แบนเนอร์ 1">
+ </div></div>
+ <h2>กรอกข้อมูลสั่งจอง</h2>
  <form id="f" novalidate>
   <div class="fld" data-k="prefix"><label for="prefix">คำนำหน้า (ไทย)</label><select id="prefix"><option value="">เลือกคำนำหน้า</option><option>นาย</option><option>นางสาว</option></select><p class="err"></p></div>
   <div class="fld" data-k="th"><label for="th">ชื่อ-นามสกุล (ไทย)</label><input id="th" type="text" placeholder="เช่น สมชาย ใจดี" autocomplete="off"><p class="err"></p></div>
@@ -211,7 +279,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
   <div class="fld" data-k="sid"><label for="sid">รหัสนักศึกษา</label><div class="pre"><b>B</b><input id="sid" type="text" inputmode="numeric" maxlength="7" placeholder="เลข 7 หลัก"></div><p class="err"></p></div>
   <div class="fld" data-k="major"><label for="major">สาขาวิชา</label><select id="major"><option value="">เลือกสาขา</option><option>Digital Communication</option><option>Digital Technology</option></select><p class="err"></p></div>
   <div class="fld" data-k="aka"><div class="lb"><label for="aka" style="margin:0">AKA (ไม่เพิ่มราคา)</label><label style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="akaOn"> ต้องการใส่ AKA (ฉายา)</label></div><input id="aka" type="text" placeholder="ภาษาอังกฤษเท่านั้น" disabled><p class="err"></p></div>
-  <div class="fld" data-k="emb"><label for="emb">ปักชื่อ DIGITECH ด้านหลังเสื้อ</label><select id="emb"><option value="">เลือก</option><option value="0">ไม่ปัก (+0 บาท)</option><option value="1">ปัก (+50 บาท)</option></select><p class="err"></p></div>
+  <div class="fld" data-k="emb"><label for="emb">เลือกรูปแบบการปักด้านหลัง</label><select id="emb"><option value="">เลือก</option><option value="-">ไม่ปัก (+0 บาท)</option><option value="DIGITECH">DIGITECH (+50 บาท)</option><option value="DIGITECH#7">DIGITECH#7 (+50 บาท)</option><option value="DIGITAL COMMUNICATION">DIGITAL COMMUNICATION (+50 บาท)</option><option value="DIGITAL TECHNOLOGY">DIGITAL TECHNOLOGY (+50 บาท)</option><option value="Digital Arts and Science">Digital Arts and Science (+50 บาท)</option><option value="Digital Arts &amp; Science">Digital Arts &amp; Science (+50 บาท)</option><option value="DIGITAL ARTS AND SCIENCE">DIGITAL ARTS AND SCIENCE (+50 บาท)</option><option value="DIGITAL ARTS &amp; SCIENCE">DIGITAL ARTS &amp; SCIENCE (+50 บาท)</option></select><p class="err"></p></div>
   <div class="fld" data-k="qty"><label for="qty">จำนวนเสื้อช็อป</label><div class="qty"><button type="button" class="btn ghost" id="qm" aria-label="ลด">−</button><input id="qty" type="text" inputmode="numeric" value="1"><button type="button" class="btn ghost" id="qp" aria-label="เพิ่ม">+</button></div><p class="err"></p></div>
   <div class="fld" data-k="ig"><label for="ig">Instagram</label><input id="ig" type="text" placeholder="@username" autocapitalize="off" autocomplete="off"><p class="err"></p></div>
   <div class="fld" data-k="phone"><label for="phone">เบอร์โทรศัพท์</label><input id="phone" type="tel" inputmode="numeric" maxlength="10" placeholder="0812345678"><p class="err"></p></div>
@@ -221,7 +289,31 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
 </div>
 
 <!-- ===== ขั้นที่ 2: ตรวจทาน ===== -->
-<div id="v2" class="view" hidden><section class="card"><h2>ตรวจทานรายการ</h2><div class="sum" id="rv"></div></section>
+<div id="v2" class="view" hidden><section class="card"><h2>ตรวจสอบรายการ</h2><div class="sum" id="rv"></div></section>
+
+ <div class="pv-row" id="pvSec" aria-label="ตัวอย่างงานปักแบบเรียลไทม์">
+  <figure class="card pv-box"><h2>พรีวิวอกเสื้อด้านขวา</h2>
+   <div class="pv-stage" id="pvChest" role="img" aria-label="ตัวอย่างงานปักอกเสื้อ">
+    <div class="pv-block">
+     <p>SURANAREE</p>
+     <p>UNIVERSITY OF TECHNOLOGY</p>
+     <p>DIGITAL ARTS AND SCIENCE</p>
+     <p id="pvL4"></p>
+     <p id="pvL5"></p>
+    </div>
+   </div></figure>
+  <figure class="card pv-box"><h2>พรีวิวแขนเสื้อด้านข้าง</h2>
+   <div class="pv-stage" id="pvSide" role="img" aria-label="ตัวอย่างงานปักแขนเสื้อ">
+    <div class="pv-block">
+     <p id="pvAka"></p>
+     <p>DIGITECH#7</p>
+    </div>
+   </div></figure>
+  <figure class="card pv-box pv-wide"><h2>พรีวิวด้านหลังเสื้อ</h2>
+   <div class="pv-stage" id="pvBack" role="img" aria-label="ตัวอย่างด้านหลังเสื้อ">
+    <div class="pv-block"><p id="pvBk"></p></div>
+   </div></figure>
+ </div>
  <section class="card"><div class="sum" id="rc"></div><div class="row2" style="margin-top:14px"><button class="btn ghost" id="edit">แก้ไขข้อมูล</button><button class="btn" id="pay">ชำระเงิน</button></div></section></div>
 
 <!-- ===== ขั้นที่ 3: ชำระเงิน ===== -->
@@ -240,7 +332,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
  <p class="note" style="text-align:center">โปรดเข้าลองวัดไซซ์เสื้อด้วยตนเองที่หน้าร้าน เพื่อไซซ์ที่สวมใส่ได้อย่างสบายและพอดี</p><p class="note" style="text-align:center;margin-top:0">
   <a id="sheetLink" target="_blank" rel="noopener" style="color:var(--g4);text-decoration:underline;font-weight:500;font-size:0.95rem;display:inline-flex;align-items:center;gap:4px">ตรวจสอบรายการออเดอร์ทั้งหมด</a>
 </p><div class="row2"><button class="btn" id="home">กลับหน้าแรก</button></div></div>
- <div class="app-ver mono">© 2026 DGT Working Committee. All rights reserved. v1.0.11</div>
+ <div class="app-ver mono">© 2026 DGT Working Committee. All rights reserved. v1.1.0</div>
 </main>
 <div id="cta" class="h"><button class="btn" id="ctaBtn" data-go>สั่งจองเลย</button></div>
 <canvas id="cf" hidden></canvas>
@@ -321,7 +413,7 @@ const V={
  sid:v=>/^\d{7}$/.test(v)?'':'กรอกตัวเลข 7 หลักให้ครบ',
  major:v=>v?'':'กรุณาเลือกสาขาวิชา',
  aka:v=>!$('#akaOn').checked?'':(/^[A-Za-z]+$/.test(v)&&v.length<=CFG.AKA_MAX?'':`กรอกอักษรอังกฤษ A-Z ไม่เกิน ${CFG.AKA_MAX} ตัว (ไม่มีช่องว่าง)`),
- emb:v=>v?'':'กรุณาเลือกว่าจะปักชื่อหรือไม่',
+ emb:v=>v?'':'กรุณาเลือกรูปแบบการปักด้านหลัง',
  qty:v=>/^\d+$/.test(v)&&+v>=1&&+v<=CFG.MAX_QTY?'':`กรอกจำนวน 1-${CFG.MAX_QTY} ตัว`,
  ig:v=>/^@[a-z0-9._]{1,30}$/.test(v)?'':'กรอก username ใช้ a-z, 0-9, จุด, ขีดล่าง ไม่เกิน 30 ตัว',
  phone:v=>/^0\d{9}$/.test(v)?'':'กรอกเบอร์ 10 หลัก ขึ้นต้นด้วย 0'
@@ -342,20 +434,20 @@ const setQ=n=>{F.qty.value=Math.min(CFG.MAX_QTY,Math.max(1,n));touched.qty=true;
 $('#qm').onclick=()=>setQ((+F.qty.value||1)-1);$('#qp').onclick=()=>setQ((+F.qty.value||0)+1);
 /* ส่วนสรุปราคา (ประมาณการเท่านั้น Backend เป็นผู้ยืนยันยอดจริง) */
 const cu=new WeakMap();function count(el,to,fmt){const from=cu.get(el)||0,id=(el._c=(el._c||0)+1);cu.set(el,to);if(RM){el.textContent=fmt(to);return}const t0=performance.now();(function f(t){if(el._c!==id)return;const p=Math.min(1,(t-t0)/400);el.textContent=fmt(from+(to-from)*p);if(p<1)requestAnimationFrame(f)})(t0)}
-function calc(){const q=Math.max(0,Math.min(CFG.MAX_QTY,+F.qty.value||0)),e=F.emb.value==='1'?CFG.EMB_PRICE:0;
+function calc(){const q=Math.max(0,Math.min(CFG.MAX_QTY,+F.qty.value||0)),e=(F.emb.value&&F.emb.value!=='-')?CFG.EMB_PRICE:0;
  $('#s1').textContent=CFG.SHIRT_PRICE?CFG.SHIRT_PRICE+' บาท':'รอประกาศ';$('#s2').textContent=e+' บาท';$('#s3').textContent=q+' ตัว';
  const tot=(CFG.SHIRT_PRICE+e)*q;count($('#s4'),tot,v=>Math.round(v).toLocaleString('th-TH')+' บาท');return{q,e,tot}}
 calc();
 
 /* ===== นำทางระหว่างขั้น ===== */
 function go(n){S.step=n;[0,1,2,3,4].forEach(i=>{$('#v'+i).hidden=i!==n;const v=$('#v'+i);v.classList.remove('view');void v.offsetWidth;v.classList.add('view')});$$('#prog i').forEach((e,i)=>e.classList.toggle('on',i<n));$('#cta').classList.toggle('h',!(S.seen&&n===0));try{scrollTo({top:0,behavior:'instant'})}catch(_){scrollTo(0,0)}if(n!==3)clearInterval(S.timer);if(n===0)requestAnimationFrame(onScroll)}
-const data=()=>({prefix:F.prefix.value,nameTh:F.th.value.trim(),nameEn:F.en.value.trim(),studentId:'B'+F.sid.value,major:F.major.value,aka:$('#akaOn').checked?F.aka.value:'',embroidery:F.emb.value==='1',qty:+F.qty.value,instagram:F.ig.value,phone:F.phone.value});
+const data=()=>({prefix:F.prefix.value,nameTh:F.th.value.trim(),nameEn:F.en.value.trim(),studentId:'B'+F.sid.value,major:F.major.value,aka:$('#akaOn').checked?F.aka.value:'',embroidery:F.emb.value,qty:+F.qty.value,instagram:F.ig.value,phone:F.phone.value});
 $('#f').onsubmit=e=>{e.preventDefault();if(isClosed()){toast('ปิดรับพรีออเดอร์แล้ว',1);return}
  const bad=Object.keys(F).filter(k=>!chk(k,true));if(bad.length){F[bad[0]].scrollIntoView({block:'center',behavior:RM?'auto':'smooth'});F[bad[0]].focus({preventScroll:true});toast('กรุณากรอกข้อมูลให้ถูกต้องครบถ้วน',1);return}
  renderReview();go(2)};
 function renderReview(){const d=data(),k=JSON.stringify(d);if(S.rk!==k){S.rk=k;S.rid=(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2))}const c=calc(),r=(a,b)=>`<div><span>${a}</span><span>${b}</span></div>`;
- $('#rv').innerHTML=r('ชื่อ-นามสกุล (ไทย)',esc(d.prefix+' '+d.nameTh))+r('ชื่อ-นามสกุล (อังกฤษ)',esc(d.nameEn))+r('รหัสนักศึกษา',esc(d.studentId))+r('สาขาวิชา',esc(d.major))+r('AKA',d.aka?esc(d.aka):'<span style="color:#587a6b">—</span>')+r('ปักชื่อ DIGITECH ด้านหลัง',d.embroidery?'ปัก':'ไม่ปัก')+r('จำนวน',d.qty+' ตัว')+r('Instagram',esc(d.instagram))+r('เบอร์โทร',esc(d.phone));
- $('#rc').innerHTML=r('ค่าเสื้อ × '+d.qty,CFG.SHIRT_PRICE?CFG.SHIRT_PRICE*d.qty+' บาท':'รอประกาศ')+r('ค่าปักหลัง × '+(d.embroidery?d.qty:0),(c.e*d.qty)+' บาท')+`<div class="tot"><span>ยอดรวมทั้งหมด</span><span>${c.tot.toLocaleString('th-TH')} บาท</span></div>`}
+ $('#rv').innerHTML=r('ชื่อ-นามสกุล (ไทย)',esc(d.prefix+' '+d.nameTh))+r('ชื่อ-นามสกุล (อังกฤษ)',esc(d.nameEn))+r('รหัสนักศึกษา',esc(d.studentId))+r('สาขาวิชา',esc(d.major))+r('AKA',d.aka?esc(d.aka):'<span style="color:#587a6b">—</span>')+r('รูปแบบการปักด้านหลัง',d.embroidery==='-'?'ไม่ปัก':esc(d.embroidery))+r('จำนวน',d.qty+' ตัว')+r('Instagram',esc(d.instagram))+r('เบอร์โทร',esc(d.phone));
+ $('#rc').innerHTML=r('ค่าเสื้อ × '+d.qty,CFG.SHIRT_PRICE?CFG.SHIRT_PRICE*d.qty+' บาท':'รอประกาศ')+r('ค่าปักหลัง × '+(d.embroidery!=='-'?d.qty:0),(c.e*d.qty)+' บาท')+`<div class="tot"><span>ยอดรวมทั้งหมด</span><span>${c.tot.toLocaleString('th-TH')} บาท</span></div>`}
 $('#edit').onclick=()=>go(1);$('#back').onclick=()=>go(0);
 
 /* ===== API (Google Apps Script) + Mock ===== */
@@ -367,7 +459,7 @@ async function api(action,payload,timeout){
  catch(e){throw{code:e.name==='AbortError'?'TIMEOUT':'NETWORK'}}finally{clearTimeout(t)}}
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function mock(a,p){await wait(900);
- if(a==='createOrder'){const id='DGT-'+Math.random().toString(36).slice(2,8).toUpperCase(),base=((CFG.SHIRT_PRICE+(p.embroidery?CFG.EMB_PRICE:0))*p.qty);
+ if(a==='createOrder'){const id='DGT-'+Math.random().toString(36).slice(2,8).toUpperCase(),base=((CFG.SHIRT_PRICE+(p.embroidery!=='-'?CFG.EMB_PRICE:0))*p.qty);
   return{ok:true,orderId:id,amount:+(base+(1+Math.random()*98|0)/100).toFixed(2),qrPayload:id,receiver:'ชมรม DIGITECH (ตัวอย่าง)',expiresAt:Date.now()+CFG.QR_MINUTES*60000}}
  if(a==='submitSlip'){const s=$('#mockRes').value;return{ok:true,status:s,message:''}}
  return{ok:true,status:'PENDING'}}
@@ -459,7 +551,7 @@ function thanks(s){
   const d=data(), o=S.order;
   $('#tId').textContent=o.orderId;
   
-  $('#tSum').innerHTML=esc(d.nameEn)+' · '+esc(d.major)+'<br>'+d.qty+' ตัว · '+(d.embroidery?'ปักชื่อหลัง':'ไม่ปักชื่อ');
+  $('#tSum').innerHTML=esc(d.nameEn)+' · '+esc(d.major)+'<br>'+d.qty+' ตัว · '+(d.embroidery!=='-'?'ปักหลัง: '+esc(d.embroidery):'ไม่ปักหลัง');
   $('#tAmt').textContent=baht(o.amount);
   $('#tDt').textContent=new Date().toLocaleString('th-TH')+(s==='PAID'?' · ชำระเงินแล้ว':' · รอแอดมินตรวจสอบสลิป');
   go(4);
@@ -485,6 +577,32 @@ function confetti(){
     else c.hidden=true;
   })();
 }
+
+
+/* ===== Live Embroidery Preview: data binding ===== */
+function pvRender(){const d=data(),set=(id,v)=>{$('#'+id).textContent=v};
+ set('pvL4',(d.nameEn||'').toUpperCase());
+ set('pvL5',(d.major||'').toUpperCase());
+ set('pvAka',d.aka?String(d.aka):'');   // แขนเสื้อ: แสดงตัวพิมพ์เล็ก/ใหญ่ตามที่กรอก
+ set('pvBk',(d.embroidery&&d.embroidery!=='-')?d.embroidery:'');   // หลังเสื้อ: ไม่ปัก = ว่าง
+ // ถ้าข้อความยาวเกินกรอบ ย่อ "ทั้งบล็อกพร้อมกัน" ให้ขนาดทุกบรรทัดยังเท่ากัน
+ $$('#pvSec .pv-block').forEach(bk=>{bk.style.removeProperty('--fs');const max=bk.parentElement.clientWidth*.94,w=Math.max(...[...bk.children].map(p=>p.scrollWidth));
+  if(w>max)bk.style.setProperty('--fs',(parseFloat(getComputedStyle(bk).fontSize)*max/w)+'px')})}
+(function(){const _rr=renderReview;renderReview=function(){_rr.apply(this,arguments);pvRender()};
+ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(S.step===2)pvRender()});
+ addEventListener('resize',()=>{if(S.step===2)pvRender()});
+ // ล็อกอัตราส่วนกรอบหลังเสื้อให้ตรงกับไฟล์ Preview_Back.png จริง
+ const im=new Image();im.onload=()=>{if(im.naturalWidth&&im.naturalHeight)$('#pvBack').style.setProperty('--ar',im.naturalWidth+' / '+im.naturalHeight)};im.src='Preview_Back.png'})();
+
+/* ===== Auto Banner Slider ===== */
+(function(){const tr=$('#bnTrack');if(!tr)return;
+ const imgs=[...tr.children];if(!imgs.length)return;
+ imgs.forEach(i=>i.addEventListener('error',()=>{i.style.visibility='hidden'}));
+ const n=imgs.length;let k=0;
+ if(n>1){const c=imgs[0].cloneNode(true);c.setAttribute('aria-hidden','true');tr.append(c)}   // สำเนาภาพแรกต่อท้าย เพื่อวนลูปไม่สะดุด
+ const mv=on=>{tr.style.transition=on?'':'none';tr.style.transform='translateX(-'+k*100+'%)'};
+ if(n>1)setInterval(()=>{if(document.hidden||!tr.offsetParent)return;k++;mv(true);
+  if(k===n)setTimeout(()=>{k=0;mv(false);void tr.offsetWidth;tr.style.transition=''},650)},3500)})();
 
 /* ===== ปุ่มกลับหน้าแรก ===== */
 $('#home').onclick=()=>{
