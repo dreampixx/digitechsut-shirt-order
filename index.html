@@ -279,7 +279,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
   <div class="fld" data-k="sid"><label for="sid">รหัสนักศึกษา</label><div class="pre"><b>B</b><input id="sid" type="text" inputmode="numeric" maxlength="7" placeholder="เลข 7 หลัก"></div><p class="err"></p></div>
   <div class="fld" data-k="major"><label for="major">สาขาวิชา</label><select id="major"><option value="">เลือกสาขา</option><option>Digital Communication</option><option>Digital Technology</option></select><p class="err"></p></div>
   <div class="fld" data-k="aka"><div class="lb"><label for="aka" style="margin:0">AKA (ไม่เพิ่มราคา)</label><label style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="akaOn"> ต้องการใส่ AKA (ฉายา)</label></div><input id="aka" type="text" placeholder="ภาษาอังกฤษเท่านั้น" disabled><p class="err"></p></div>
-  <div class="fld" data-k="emb"><label for="emb">เลือกรูปแบบการปักด้านหลัง</label><select id="emb"><option value="">เลือก</option><option value="-">ไม่ปัก (+0 บาท)</option><option value="DIGITECH">DIGITECH (+50 บาท)</option><option value="DIGITECH#7">DIGITECH#7 (+50 บาท)</option><option value="DIGITAL COMMUNICATION">DIGITAL COMMUNICATION (+50 บาท)</option><option value="DIGITAL TECHNOLOGY">DIGITAL TECHNOLOGY (+50 บาท)</option><option value="Digital Arts and Science">Digital Arts and Science (+50 บาท)</option><option value="Digital Arts &amp; Science">Digital Arts &amp; Science (+50 บาท)</option><option value="DIGITAL ARTS AND SCIENCE">DIGITAL ARTS AND SCIENCE (+50 บาท)</option><option value="DIGITAL ARTS &amp; SCIENCE">DIGITAL ARTS &amp; SCIENCE (+50 บาท)</option></select><p class="err"></p></div>
+  <div class="fld" data-k="emb"><label for="emb">เลือกรูปแบบการปักด้านหลัง</label><select id="emb"><option value="">เลือก</option><option value="ไม่ปัก">ไม่ปัก (+0 บาท)</option><option value="ปัก">ปัก (+50 บาท)</option></select><p class="err"></p></div>
   <div class="fld" data-k="qty"><label for="qty">จำนวนเสื้อช็อป</label><div class="qty"><button type="button" class="btn ghost" id="qm" aria-label="ลด">−</button><input id="qty" type="text" inputmode="numeric" value="1"><button type="button" class="btn ghost" id="qp" aria-label="เพิ่ม">+</button></div><p class="err"></p></div>
   <div class="fld" data-k="ig"><label for="ig">Instagram</label><input id="ig" type="text" placeholder="@username" autocapitalize="off" autocomplete="off"><p class="err"></p></div>
   <div class="fld" data-k="phone"><label for="phone">เบอร์โทรศัพท์</label><input id="phone" type="tel" inputmode="numeric" maxlength="10" placeholder="0812345678"><p class="err"></p></div>
@@ -332,7 +332,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
  <p class="note" style="text-align:center">โปรดเข้าลองวัดไซซ์เสื้อด้วยตนเองที่หน้าร้าน เพื่อไซซ์ที่สวมใส่ได้อย่างสบายและพอดี</p><p class="note" style="text-align:center;margin-top:0">
   <a id="sheetLink" target="_blank" rel="noopener" style="color:var(--g4);text-decoration:underline;font-weight:500;font-size:0.95rem;display:inline-flex;align-items:center;gap:4px">ตรวจสอบรายการออเดอร์ทั้งหมด</a>
 </p><div class="row2"><button class="btn" id="home">กลับหน้าแรก</button></div></div>
- <div class="app-ver mono">© 2026 DGT Working Committee. All rights reserved. v1.1.0</div>
+ <div class="app-ver mono">© 2026 DGT Working Committee. All rights reserved. v1.1.1</div>
 </main>
 <div id="cta" class="h"><button class="btn" id="ctaBtn" data-go>สั่งจองเลย</button></div>
 <canvas id="cf" hidden></canvas>
@@ -434,7 +434,7 @@ const setQ=n=>{F.qty.value=Math.min(CFG.MAX_QTY,Math.max(1,n));touched.qty=true;
 $('#qm').onclick=()=>setQ((+F.qty.value||1)-1);$('#qp').onclick=()=>setQ((+F.qty.value||0)+1);
 /* ส่วนสรุปราคา (ประมาณการเท่านั้น Backend เป็นผู้ยืนยันยอดจริง) */
 const cu=new WeakMap();function count(el,to,fmt){const from=cu.get(el)||0,id=(el._c=(el._c||0)+1);cu.set(el,to);if(RM){el.textContent=fmt(to);return}const t0=performance.now();(function f(t){if(el._c!==id)return;const p=Math.min(1,(t-t0)/400);el.textContent=fmt(from+(to-from)*p);if(p<1)requestAnimationFrame(f)})(t0)}
-function calc(){const q=Math.max(0,Math.min(CFG.MAX_QTY,+F.qty.value||0)),e=(F.emb.value&&F.emb.value!=='-')?CFG.EMB_PRICE:0;
+function calc(){const q=Math.max(0,Math.min(CFG.MAX_QTY,+F.qty.value||0)),e=(F.emb.value==='ปัก')?CFG.EMB_PRICE:0;
  $('#s1').textContent=CFG.SHIRT_PRICE?CFG.SHIRT_PRICE+' บาท':'รอประกาศ';$('#s2').textContent=e+' บาท';$('#s3').textContent=q+' ตัว';
  const tot=(CFG.SHIRT_PRICE+e)*q;count($('#s4'),tot,v=>Math.round(v).toLocaleString('th-TH')+' บาท');return{q,e,tot}}
 calc();
@@ -446,8 +446,8 @@ $('#f').onsubmit=e=>{e.preventDefault();if(isClosed()){toast('ปิดรับ
  const bad=Object.keys(F).filter(k=>!chk(k,true));if(bad.length){F[bad[0]].scrollIntoView({block:'center',behavior:RM?'auto':'smooth'});F[bad[0]].focus({preventScroll:true});toast('กรุณากรอกข้อมูลให้ถูกต้องครบถ้วน',1);return}
  renderReview();go(2)};
 function renderReview(){const d=data(),k=JSON.stringify(d);if(S.rk!==k){S.rk=k;S.rid=(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2))}const c=calc(),r=(a,b)=>`<div><span>${a}</span><span>${b}</span></div>`;
- $('#rv').innerHTML=r('ชื่อ-นามสกุล (ไทย)',esc(d.prefix+' '+d.nameTh))+r('ชื่อ-นามสกุล (อังกฤษ)',esc(d.nameEn))+r('รหัสนักศึกษา',esc(d.studentId))+r('สาขาวิชา',esc(d.major))+r('AKA',d.aka?esc(d.aka):'<span style="color:#587a6b">—</span>')+r('รูปแบบการปักด้านหลัง',d.embroidery==='-'?'ไม่ปัก':esc(d.embroidery))+r('จำนวน',d.qty+' ตัว')+r('Instagram',esc(d.instagram))+r('เบอร์โทร',esc(d.phone));
- $('#rc').innerHTML=r('ค่าเสื้อ × '+d.qty,CFG.SHIRT_PRICE?CFG.SHIRT_PRICE*d.qty+' บาท':'รอประกาศ')+r('ค่าปักหลัง × '+(d.embroidery!=='-'?d.qty:0),(c.e*d.qty)+' บาท')+`<div class="tot"><span>ยอดรวมทั้งหมด</span><span>${c.tot.toLocaleString('th-TH')} บาท</span></div>`}
+ $('#rv').innerHTML=r('ชื่อ-นามสกุล (ไทย)',esc(d.prefix+' '+d.nameTh))+r('ชื่อ-นามสกุล (อังกฤษ)',esc(d.nameEn))+r('รหัสนักศึกษา',esc(d.studentId))+r('สาขาวิชา',esc(d.major))+r('AKA',d.aka?esc(d.aka):'<span style="color:#587a6b">—</span>')+r('รูปแบบการปักด้านหลัง',esc(d.embroidery))+r('จำนวน',d.qty+' ตัว')+r('Instagram',esc(d.instagram))+r('เบอร์โทร',esc(d.phone));
+ $('#rc').innerHTML=r('ค่าเสื้อ × '+d.qty,CFG.SHIRT_PRICE?CFG.SHIRT_PRICE*d.qty+' บาท':'รอประกาศ')+r('ค่าปักหลัง × '+(d.embroidery==='ปัก'?d.qty:0),(c.e*d.qty)+' บาท')+`<div class="tot"><span>ยอดรวมทั้งหมด</span><span>${c.tot.toLocaleString('th-TH')} บาท</span></div>`}
 $('#edit').onclick=()=>go(1);$('#back').onclick=()=>go(0);
 
 /* ===== API (Google Apps Script) + Mock ===== */
@@ -459,7 +459,7 @@ async function api(action,payload,timeout){
  catch(e){throw{code:e.name==='AbortError'?'TIMEOUT':'NETWORK'}}finally{clearTimeout(t)}}
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function mock(a,p){await wait(900);
- if(a==='createOrder'){const id='DGT-'+Math.random().toString(36).slice(2,8).toUpperCase(),base=((CFG.SHIRT_PRICE+(p.embroidery!=='-'?CFG.EMB_PRICE:0))*p.qty);
+ if(a==='createOrder'){const id='DGT-'+Math.random().toString(36).slice(2,8).toUpperCase(),base=((CFG.SHIRT_PRICE+(p.embroidery==='ปัก'?CFG.EMB_PRICE:0))*p.qty);
   return{ok:true,orderId:id,amount:+(base+(1+Math.random()*98|0)/100).toFixed(2),qrPayload:id,receiver:'ชมรม DIGITECH (ตัวอย่าง)',expiresAt:Date.now()+CFG.QR_MINUTES*60000}}
  if(a==='submitSlip'){const s=$('#mockRes').value;return{ok:true,status:s,message:''}}
  return{ok:true,status:'PENDING'}}
@@ -551,7 +551,7 @@ function thanks(s){
   const d=data(), o=S.order;
   $('#tId').textContent=o.orderId;
   
-  $('#tSum').innerHTML=esc(d.nameEn)+' · '+esc(d.major)+'<br>'+d.qty+' ตัว · '+(d.embroidery!=='-'?'ปักหลัง: '+esc(d.embroidery):'ไม่ปักหลัง');
+  $('#tSum').innerHTML=esc(d.nameEn)+' · '+esc(d.major)+'<br>'+d.qty+' ตัว · '+(d.embroidery==='ปัก'?'ปักหลัง':'ไม่ปักหลัง');
   $('#tAmt').textContent=baht(o.amount);
   $('#tDt').textContent=new Date().toLocaleString('th-TH')+(s==='PAID'?' · ชำระเงินแล้ว':' · รอแอดมินตรวจสอบสลิป');
   go(4);
@@ -584,7 +584,7 @@ function pvRender(){const d=data(),set=(id,v)=>{$('#'+id).textContent=v};
  set('pvL4',(d.nameEn||'').toUpperCase());
  set('pvL5',(d.major||'').toUpperCase());
  set('pvAka',d.aka?String(d.aka):'');   // แขนเสื้อ: แสดงตัวพิมพ์เล็ก/ใหญ่ตามที่กรอก
- set('pvBk',(d.embroidery&&d.embroidery!=='-')?d.embroidery:'');   // หลังเสื้อ: ไม่ปัก = ว่าง
+ set('pvBk',d.embroidery==='ปัก'?'DIGITECH':'');   // หลังเสื้อ: ปัก = DIGITECH, ไม่ปัก = ว่าง
  // ถ้าข้อความยาวเกินกรอบ ย่อ "ทั้งบล็อกพร้อมกัน" ให้ขนาดทุกบรรทัดยังเท่ากัน
  $$('#pvSec .pv-block').forEach(bk=>{bk.style.removeProperty('--fs');const max=bk.parentElement.clientWidth*.94,w=Math.max(...[...bk.children].map(p=>p.scrollWidth));
   if(w>max)bk.style.setProperty('--fs',(parseFloat(getComputedStyle(bk).fontSize)*max/w)+'px')})}
