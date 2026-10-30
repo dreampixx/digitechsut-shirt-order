@@ -217,7 +217,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
    --fs : ขนาดตัวอักษร หน่วย cqw = % ของความกว้างกรอบรูป (เลขมาก = ใหญ่, เลขน้อย = เล็ก) เช่น 6cqw
    --lh : ระยะบรรทัด (เช่น 1.1)
    ถ้าข้อความยาวเกินกรอบ ระบบย่อให้พอดีอัตโนมัติ  ขนาดและตำแหน่งเป็น % จึงไม่เพี้ยนในทุกอุปกรณ์ */
-#pvBack .pv-block{--x:49%;--y:50%;--fs:6.5cqw;--lh:1.1;font-family:"Prompt","Noto Sans Thai",sans-serif;font-weight:700}
+#pvBack .pv-block{--x:49%;--y:50%;--fs:5.5cqw;--lh:1.1;font-family:"Prompt","Noto Sans Thai",sans-serif;font-weight:700}
 /* แขนเสื้อและหลังเสื้อ: แสดงตัวพิมพ์เล็ก/ใหญ่ตามที่เลือก/กรอก (ไม่แปลงเป็นตัวพิมพ์ใหญ่) ส่วนอกเสื้อยังเป็นตัวพิมพ์ใหญ่ทั้งหมด */
 #pvSide .pv-block,#pvBack .pv-block{text-transform:none}
 .pv-note{margin:10px 0 0;font-size:.8rem;color:var(--mut);text-align:center}
@@ -278,7 +278,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
   <div class="fld" data-k="en"><label for="en">ชื่อ-นามสกุล (อังกฤษ)</label><input id="en" type="text" placeholder="SOMCHAI JAIDEE" autocomplete="off"><p class="err"></p></div>
   <div class="fld" data-k="sid"><label for="sid">รหัสนักศึกษา</label><div class="pre"><b>B</b><input id="sid" type="text" inputmode="numeric" maxlength="7" placeholder="เลข 7 หลัก"></div><p class="err"></p></div>
   <div class="fld" data-k="major"><label for="major">สาขาวิชา</label><select id="major"><option value="">เลือกสาขา</option><option>Digital Communication</option><option>Digital Technology</option></select><p class="err"></p></div>
-  <div class="fld" data-k="aka"><div class="lb"><label for="aka" style="margin:0">AKA (ไม่เพิ่มราคา)</label><label style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="akaOn"> ต้องการใส่ AKA (ฉายา)</label></div><input id="aka" type="text" placeholder="ภาษาอังกฤษเท่านั้น" disabled><p class="err"></p></div>
+  <div class="fld" data-k="aka"><div class="lb"><label for="aka" style="margin:0">AKA (ไม่เพิ่มราคา)</label><label style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="akaOn"> ต้องการใส่ AKA (ฉายา)</label></div><input id="aka" type="text" placeholder="A-Z, 0-9, เว้นวรรค, จุด, _ (ไม่เกิน 20 ตัว)" disabled><p class="err"></p></div>
   <div class="fld" data-k="emb"><label for="emb">เลือกรูปแบบการปักด้านหลัง</label><select id="emb"><option value="">เลือก</option><option value="ไม่ปัก">ไม่ปัก (+0 บาท)</option><option value="ปัก">ปัก (+50 บาท)</option></select><p class="err"></p></div>
   <div class="fld" data-k="qty"><label for="qty">จำนวนเสื้อช็อป</label><div class="qty"><button type="button" class="btn ghost" id="qm" aria-label="ลด">−</button><input id="qty" type="text" inputmode="numeric" value="1"><button type="button" class="btn ghost" id="qp" aria-label="เพิ่ม">+</button></div><p class="err"></p></div>
   <div class="fld" data-k="ig"><label for="ig">Instagram</label><input id="ig" type="text" placeholder="@username" autocapitalize="off" autocomplete="off"><p class="err"></p></div>
@@ -332,7 +332,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
  <p class="note" style="text-align:center">โปรดเข้าลองวัดไซซ์เสื้อด้วยตนเองที่หน้าร้าน เพื่อไซซ์ที่สวมใส่ได้อย่างสบายและพอดี</p><p class="note" style="text-align:center;margin-top:0">
   <a id="sheetLink" target="_blank" rel="noopener" style="color:var(--g4);text-decoration:underline;font-weight:500;font-size:0.95rem;display:inline-flex;align-items:center;gap:4px">ตรวจสอบรายการออเดอร์ทั้งหมด</a>
 </p><div class="row2"><button class="btn" id="home">กลับหน้าแรก</button></div></div>
- <div class="app-ver mono">© 2026 DGT Working Committee. All rights reserved. v1.1.1</div>
+ <div class="app-ver mono">© 2026 DGT Working Committee. All rights reserved. v1.1.2</div>
 </main>
 <div id="cta" class="h"><button class="btn" id="ctaBtn" data-go>สั่งจองเลย</button></div>
 <canvas id="cf" hidden></canvas>
@@ -412,7 +412,9 @@ const V={
  en:v=>/^[A-Z]+( [A-Z]+)+$/.test(v.trim())?'':'กรอกชื่อและนามสกุลเป็นอักษรอังกฤษ A-Z เว้นวรรคระหว่างกัน',
  sid:v=>/^\d{7}$/.test(v)?'':'กรอกตัวเลข 7 หลักให้ครบ',
  major:v=>v?'':'กรุณาเลือกสาขาวิชา',
- aka:v=>!$('#akaOn').checked?'':(/^[A-Za-z]+$/.test(v)&&v.length<=CFG.AKA_MAX?'':`กรอกอักษรอังกฤษ A-Z ไม่เกิน ${CFG.AKA_MAX} ตัว (ไม่มีช่องว่าง)`),
+ /* [v1.1.2] AKA: เดิมรับเฉพาะ /^[A-Za-z]+$/ -> ตอนนี้รับ A-Z, a-z, 0-9, เว้นวรรค, จุด (.), อันเดอร์สกอร์ (_)
+   Regex และข้อความแจ้งเตือนต้องตรงกับ Backend (AKA_REGEX / AKA_ERROR_MSG) */
+ aka:v=>!$('#akaOn').checked?'':(/^[A-Za-z0-9 ._]+$/.test(v.trim())&&v.length<=CFG.AKA_MAX?'':`AKA ต้องเป็นภาษาอังกฤษ ตัวเลข จุด อันเดอร์สกอร์ หรือเว้นวรรคเท่านั้น (ไม่เกิน ${CFG.AKA_MAX} ตัว)`),
  emb:v=>v?'':'กรุณาเลือกรูปแบบการปักด้านหลัง',
  qty:v=>/^\d+$/.test(v)&&+v>=1&&+v<=CFG.MAX_QTY?'':`กรอกจำนวน 1-${CFG.MAX_QTY} ตัว`,
  ig:v=>/^@[a-z0-9._]{1,30}$/.test(v)?'':'กรอก username ใช้ a-z, 0-9, จุด, ขีดล่าง ไม่เกิน 30 ตัว',
@@ -422,7 +424,8 @@ const clean={
  th:v=>v.replace(/[^\u0E01-\u0E3A\u0E40-\u0E4E ]/g,'').replace(/ {2,}/g,' '),
  en:v=>v.toUpperCase().replace(/[^A-Z ]/g,'').replace(/ {2,}/g,' '),
  sid:v=>v.replace(/\D/g,'').slice(0,7),
- aka:v=>v.replace(/[^A-Za-z]/g,'').slice(0,CFG.AKA_MAX),
+ /* [v1.1.2] ตัดอักขระที่ไม่อนุญาตทิ้งตอนพิมพ์ (คงไว้เฉพาะ A-Z a-z 0-9 เว้นวรรค . _), ไม่ให้ขึ้นต้นด้วยเว้นวรรค, ยุบเว้นวรรคซ้อน */
+ aka:v=>v.replace(/[^A-Za-z0-9 ._]/g,'').replace(/^ +/,'').replace(/ {2,}/g,' ').slice(0,CFG.AKA_MAX),
  qty:v=>v.replace(/\D/g,'').slice(0,2),
  ig:v=>{v=v.replace(/@/g,'').toLowerCase().replace(/[^a-z0-9._]/g,'').slice(0,30);return v?'@'+v:''},
  phone:v=>v.replace(/\D/g,'').slice(0,10)
@@ -441,7 +444,7 @@ calc();
 
 /* ===== นำทางระหว่างขั้น ===== */
 function go(n){S.step=n;[0,1,2,3,4].forEach(i=>{$('#v'+i).hidden=i!==n;const v=$('#v'+i);v.classList.remove('view');void v.offsetWidth;v.classList.add('view')});$$('#prog i').forEach((e,i)=>e.classList.toggle('on',i<n));$('#cta').classList.toggle('h',!(S.seen&&n===0));try{scrollTo({top:0,behavior:'instant'})}catch(_){scrollTo(0,0)}if(n!==3)clearInterval(S.timer);if(n===0)requestAnimationFrame(onScroll)}
-const data=()=>({prefix:F.prefix.value,nameTh:F.th.value.trim(),nameEn:F.en.value.trim(),studentId:'B'+F.sid.value,major:F.major.value,aka:$('#akaOn').checked?F.aka.value:'',embroidery:F.emb.value,qty:+F.qty.value,instagram:F.ig.value,phone:F.phone.value});
+const data=()=>({prefix:F.prefix.value,nameTh:F.th.value.trim(),nameEn:F.en.value.trim(),studentId:'B'+F.sid.value,major:F.major.value,aka:$('#akaOn').checked?F.aka.value.trim():'',embroidery:F.emb.value,qty:+F.qty.value,instagram:F.ig.value,phone:F.phone.value});
 $('#f').onsubmit=e=>{e.preventDefault();if(isClosed()){toast('ปิดรับพรีออเดอร์แล้ว',1);return}
  const bad=Object.keys(F).filter(k=>!chk(k,true));if(bad.length){F[bad[0]].scrollIntoView({block:'center',behavior:RM?'auto':'smooth'});F[bad[0]].focus({preventScroll:true});toast('กรุณากรอกข้อมูลให้ถูกต้องครบถ้วน',1);return}
  renderReview();go(2)};
