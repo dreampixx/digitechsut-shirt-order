@@ -1,4 +1,31 @@
 <!DOCTYPE html>
+<!--
+ ============================================================================
+  Frontend: ระบบพรีออเดอร์เสื้อช็อป DIGITECH (Single Page)
+  v1.2.0 (ต่อยอดจาก v1.1.2) — Time-based State Controller
+ ----------------------------------------------------------------------------
+  เวลาปิดรับ (Closing Timestamp) : 2026-10-31T23:59:59+07:00  -> ค่าคงที่ CLOSING_ISO / CLOSING_TS
+  ใช้เวลาเครื่องผู้ใช้เพื่อแสดงผลแบบ Real-time เท่านั้น ส่วนการ "ปิดรับจริง" ตัดสินที่ Backend (createOrder)
+
+  3 สถานะ (คำนวณใหม่ทุก 250 ms โดย tickState())
+   1) OPEN   : เหลือเวลา > 4 ชั่วโมง  -> หน้าตาเดิมทั้งหมด
+   2) URGENT : เหลือเวลา <= 4 ชั่วโมง
+        - หน้าแรก : ตัวนับถอยหลัง HH:MM:SS ใต้ชื่อ "DIGITECH" + Glitch (RGB split บาง ๆ)
+        - หน้าถัดไป : แถบนับถอยหลังตรึงบนสุดของจอ (Sticky Top Banner, z-index สูงสุด)
+        - ปุ่ม "สั่งจองเลย" เปลี่ยนเป็นสไตล์ Urgent Call; กระพริบแสงเบา ๆ เฉพาะปุ่มชี้นำไปสั่งซื้อ
+          (แผนที่ / สั่งจองเลย / ต่อไป / ชำระเงิน / ยืนยันการชำระเงิน)
+   3) CLOSED : เลยเวลาปิดรับ
+        - ไม่ลบโครงสร้างหน้า แต่ disable <input>/<select>/ปุ่ม +/- ในฟอร์มทั้งหมด
+        - ตรายางดิจิทัล "PRE-ORDER CLOSED" เอียง 15 องศา ซ้อนกลางฟอร์ม
+        - ซ่อนปุ่ม "ต่อไป" (ไม่ไปหน้าสรุปยอด/QR) เหลือปุ่ม "ตรวจสอบรายการออเดอร์ทั้งหมด" เด่นชัด
+
+  Late Slip Safeguard
+   - ส่งสลิปหลังเลยเวลาปิดรับได้ แต่ตอนกด "ยืนยันการชำระเงิน" จะมี Modal เตือน (เหลือง-แดง)
+     ต้องกด "ยอมรับและส่งสลิป" ก่อนจึงส่งจริง (Backend จะตั้งสถานะ MANUAL_REVIEW + LATE_SLIP ตามเดิม)
+
+  คงเดิมทุกประการ : กติกา AKA (/^[A-Za-z0-9 ._]+$/ + ข้อความแจ้งเตือน), การส่งค่าปัก 'ปัก'/'ไม่ปัก', Live Preview
+ ============================================================================
+-->
 <html lang="th">
 <head>
 <meta charset="utf-8">
@@ -227,6 +254,50 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
 .bn-track{display:flex;height:100%;transition:transform .6s ease}
 .bn-track img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;display:block}
 
+
+/* ===== v1.2.0 : Time-based State (URGENT / CLOSED) ===== */
+:root{--hot:#ff4d5e;--amb:#ffb020;--stamp:#b5483f}
+a.btn{display:inline-grid;place-items:center;text-decoration:none}
+/* ตัวนับถอยหลัง + Glitch แบบ Subtle (RGB split ±1px ตลอดเวลา และสะบัดสั้น ๆ เป็นช่วง) */
+.cdu{display:flex;flex-direction:column;align-items:center;gap:2px;margin:0}
+.cdu-l{font-size:.85rem;font-weight:700;color:#ffd27a;letter-spacing:.04em}
+.cdu-t{position:relative;display:inline-block;font:800 clamp(1.6rem,7.5vw,2.6rem)/1.2 Orbitron,sans-serif;letter-spacing:.1em;color:#fff3c4;text-shadow:0 0 12px rgba(255,77,94,.55);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cdu-t:before,.cdu-t:after{content:attr(data-text);position:absolute;left:0;top:0;pointer-events:none;mix-blend-mode:screen;white-space:nowrap}
+.cdu-t:before{color:#ff2d55;animation:cdG1 3.4s steps(1) infinite}
+.cdu-t:after{color:#00e5ff;animation:cdG2 3.4s steps(1) infinite}
+@keyframes cdG1{0%,86%,100%{transform:translateX(-1px);clip-path:inset(0);opacity:.55}88%{transform:translateX(-3px);clip-path:inset(8% 0 58% 0);opacity:.95}92%{transform:translateX(2px);clip-path:inset(62% 0 6% 0);opacity:.9}}
+@keyframes cdG2{0%,86%,100%{transform:translateX(1px);clip-path:inset(0);opacity:.55}89%{transform:translateX(3px);clip-path:inset(55% 0 12% 0);opacity:.95}93%{transform:translateX(-2px);clip-path:inset(10% 0 60% 0);opacity:.9}}
+/* แถบนับถอยหลังตรึงบนสุด (หน้าถัดไป) */
+.cdu-bar{position:fixed;top:0;left:0;right:0;z-index:2147483000;height:calc(38px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 12px 0;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(90deg,#3a0a12,#5c1020 50%,#3a0a12);border-bottom:1px solid var(--hot);box-shadow:0 2px 14px rgba(255,77,94,.4)}
+.cdu-bar .cdu-l:before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--hot);margin-right:8px;animation:bl 1s steps(1) infinite}
+.cdu-bar .cdu-t{font-size:1.1rem;line-height:1.2}
+body.urg-bar{padding-top:calc(38px + env(safe-area-inset-top,0px))}
+body.urg-bar #prog{top:calc(38px + env(safe-area-inset-top,0px));padding-top:8px}
+/* ปุ่มโหมด Urgent */
+@keyframes urgGlow{50%{box-shadow:0 0 20px rgba(255,176,32,.75),0 0 5px rgba(255,77,94,.9)}}
+/* กระพริบเฉพาะปุ่มที่ชี้นำไปสั่งซื้อ: แผนที่, สั่งจองเลย, ต่อไป, ชำระเงิน, ยืนยันการชำระเงิน (ปุ่มอื่น เช่น กลับ/แก้ไข/+/- ไม่กระพริบ) */
+.st-urgent :is(#map,#ctaBtn,#f button[type=submit],#pay,#verify):not(:disabled){animation:urgGlow 1.8s ease-in-out infinite}
+.btn.urgent{background:linear-gradient(135deg,#ff3b5c,var(--amb));color:#1b0306;border:2px solid #fff3b0;box-shadow:0 0 16px rgba(255,77,94,.55)}
+.st-urgent #ctaBtn:not(:disabled){animation:urgGlow 1.2s ease-in-out infinite}
+/* โหมดปิดรับ */
+.st-closed #f{opacity:.55;filter:saturate(.5)}
+select:disabled{background:#0c1f19;color:#587a6b}
+.closed-box{margin:0 0 16px;padding:14px;border:1px solid var(--bad);border-radius:12px;background:rgba(255,138,138,.1);text-align:center}
+.closed-box p{margin:0 0 12px}
+.closed-box .btn{width:100%;box-shadow:0 0 20px rgba(110,231,183,.5)}
+/* ตรายางดิจิทัล: sticky กลางจอขณะเลื่อนผ่านฟอร์ม (กล่องสูง 0 จึงไม่ดันเลย์เอาต์) */
+.stamp-wrap{position:sticky;top:42vh;top:42svh;height:0;z-index:6;pointer-events:none}
+.stamp{position:absolute;left:50%;top:0;transform:translate(-50%,-50%) rotate(-15deg);padding:8px 22px 10px;border:6px double var(--stamp);border-radius:10px;color:var(--stamp);background:rgba(2,20,16,.4);font:700 clamp(1.8rem,9vw,3rem)/1.05 Prompt,'Noto Sans Thai',sans-serif;letter-spacing:.08em;text-align:center;white-space:nowrap;text-transform:uppercase;opacity:.9;text-shadow:0 0 1px rgba(181,72,63,.7);box-shadow:inset 0 0 0 2px rgba(181,72,63,.35);animation:stampIn .5s cubic-bezier(.2,1.4,.4,1) 1}
+.stamp small{display:block;margin-top:4px;font:700 .8rem 'Noto Sans Thai',sans-serif;letter-spacing:.12em}
+@keyframes stampIn{from{opacity:0;transform:translate(-50%,-50%) rotate(-15deg) scale(1.7)}}
+/* Modal เตือนส่งสลิปเกินเวลา (เหลือง-แดง) */
+.modal{position:fixed;inset:0;z-index:2147483600;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.72)}
+.modal-card{width:min(100%,440px);padding:0 0 18px;border:2px solid var(--amb);border-radius:16px;overflow:hidden;background:linear-gradient(160deg,#2a0b0e,#1c1403);color:#ffe9a8;box-shadow:0 0 36px rgba(255,77,94,.45)}
+.modal-card:before{content:'';display:block;height:14px;background:repeating-linear-gradient(-45deg,var(--amb) 0 12px,#c0262d 12px 24px)}
+.modal-card h3{margin:16px 18px 8px;font-size:1.05rem;color:#ffb020}
+.modal-card p{margin:0 18px 16px}
+.modal-card .row2{margin:0 18px}
+.modal-card .btn.ok{background:linear-gradient(135deg,#ff3b5c,var(--amb));color:#1b0306}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -234,11 +305,13 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
 <canvas id="bg" aria-hidden="true"></canvas>
 <div id="prog" aria-label="ขั้นตอน"><i></i><i></i><i></i><i></i></div>
 <div id="toasts" role="status" aria-live="polite"></div>
+<!-- v1.2.0: แถบนับถอยหลังตรึงบนสุด (แสดงเฉพาะโหมด URGENT ในหน้าถัดไป) -->
+<div id="cdBar" class="cdu-bar" role="timer" hidden><span class="cdu-l">ปิดรับพรีออเดอร์ใน</span><span class="cdu-t" id="cdBarT" data-text="00:00:00">00:00:00</span></div>
 <main class="wrap">
 
 <!-- ===== ขั้นที่ 1: Landing + ฟอร์ม ===== -->
 <div id="v0" class="view">
- <div id="scene"><section id="hero"><h1 id="tw" class="g0" aria-label="DIGITECH"><span id="twt" data-text="" aria-hidden="true"></span><i class="cr" aria-hidden="true">|</i></h1><p id="heroP">พรีออเดอร์เสื้อช็อป DIGITECH#7<small>เลื่อนลงเพื่อดูรายละเอียด</small></p></section></div>
+ <div id="scene"><section id="hero"><h1 id="tw" class="g0" aria-label="DIGITECH"><span id="twt" data-text="" aria-hidden="true"></span><i class="cr" aria-hidden="true">|</i></h1><div id="cdHero" class="cdu" role="timer" hidden><span class="cdu-l">ปิดรับพรีออเดอร์ใน</span><span class="cdu-t" id="cdHeroT" data-text="00:00:00">00:00:00</span></div><p id="heroP">พรีออเดอร์เสื้อช็อป DIGITECH#7<small>เลื่อนลงเพื่อดูรายละเอียด</small></p></section></div>
 <div id="content">
 
  <section id="shirt" class="rv">
@@ -272,6 +345,9 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
   <img src="Banner.jpg" alt="แบนเนอร์ 1">
  </div></div>
  <h2>กรอกข้อมูลสั่งจอง</h2>
+ <!-- v1.2.0: โหมดปิดรับ — กล่องแจ้งสถานะ + ปุ่มตรวจสอบออเดอร์ + ตรายางดิจิทัล -->
+ <div id="closedBox" class="closed-box" hidden><p><b>ปิดรับพรีออเดอร์แล้ว</b> ไม่สามารถกรอกหรือสั่งจองเพิ่มได้ ผู้ที่สั่งไว้แล้วสามารถค้นหารหัสออเดอร์ของตนเองได้ที่ปุ่มด้านล่าง</p><a id="sheetLink2" class="btn" target="_blank" rel="noopener">ตรวจสอบรายการออเดอร์ทั้งหมด</a></div>
+ <div id="stampWrap" class="stamp-wrap" aria-hidden="true" hidden><div class="stamp">PRE-ORDER<br>CLOSED<small>ปิดรับพรีออเดอร์แล้ว</small></div></div>
  <form id="f" novalidate>
   <div class="fld" data-k="prefix"><label for="prefix">คำนำหน้า (ไทย)</label><select id="prefix"><option value="">เลือกคำนำหน้า</option><option>นาย</option><option>นางสาว</option></select><p class="err"></p></div>
   <div class="fld" data-k="th"><label for="th">ชื่อ-นามสกุล (ไทย)</label><input id="th" type="text" placeholder="เช่น สมชาย ใจดี" autocomplete="off"><p class="err"></p></div>
@@ -332,12 +408,18 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g3)}
  <p class="note" style="text-align:center">โปรดเข้าลองวัดไซซ์เสื้อด้วยตนเองที่หน้าร้าน เพื่อไซซ์ที่สวมใส่ได้อย่างสบายและพอดี</p><p class="note" style="text-align:center;margin-top:0">
   <a id="sheetLink" target="_blank" rel="noopener" style="color:var(--g4);text-decoration:underline;font-weight:500;font-size:0.95rem;display:inline-flex;align-items:center;gap:4px">ตรวจสอบรายการออเดอร์ทั้งหมด</a>
 </p><div class="row2"><button class="btn" id="home">กลับหน้าแรก</button></div></div>
- <div class="app-ver mono">© 2026 DGT Working Committee. All rights reserved. v1.1.2</div>
+ <div class="app-ver mono">© 2026 DGT Working Committee. All rights reserved. v1.2.0</div>
 </main>
 <div id="cta" class="h"><button class="btn" id="ctaBtn" data-go>สั่งจองเลย</button></div>
+<!-- v1.2.0: Modal เตือนส่งสลิปเกินเวลาปิดรับ -->
+<div id="lateModal" class="modal" hidden><div class="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="lateT" aria-describedby="lateD"><h3 id="lateT">แจ้งเตือน: ส่งสลิปเกินเวลา</h3><p id="lateD">คุณกำลังส่งสลิปเกินเวลาปิดรับพรีออเดอร์ รายการนี้จะถูกส่งให้แอดมินตรวจสอบอย่างละเอียดในโหมด MANUAL_REVIEW</p><div class="row2"><button type="button" class="btn ghost" id="lateNo">ยกเลิก</button><button type="button" class="btn ok" id="lateYes">ยอมรับและส่งสลิป</button></div></div></div>
 <canvas id="cf" hidden></canvas>
 
 <script>
+/* ===== v1.2.0: เวลาปิดรับ (Global Constant) — ต้องตรงกับ PREORDER_CLOSE_ISO ใน Backend ===== */
+const CLOSING_ISO='2026-10-31T23:59:59+07:00';
+const CLOSING_TS=Date.parse(CLOSING_ISO);
+const URGENT_MS=4*3600*1000;   // เหลือ <= 4 ชั่วโมง = โหมด URGENT
 /* ===== config: แก้ค่าที่นี่ที่เดียว ===== */
 const CFG={
  API_URL:'https://script.google.com/macros/s/AKfycbysspOqnpNDREjJnGZgNGWKX92ExKQNck1HDi3k1hjyu9AROsQl1FXMMH0ryLHxAPEctA/exec',            // URL ของ Google Apps Script Web App
@@ -347,7 +429,7 @@ const CFG={
  EMB_PRICE:50, MAX_QTY:10, AKA_MAX:20, QR_MINUTES:15, SLIP_MAX_MB:5, TIMEOUT_MS:15000, SLIP_TIMEOUT_MS:40000,
  FORCE_THANKS:false,    // true = ผ่านไปหน้าขอบคุณเสมอ แม้ส่งสลิปไม่สำเร็จ (พฤติกรรมเดิม ไม่แนะนำ)
 
- PREORDER_START:'22/10/26', PREORDER_END:'31/10/26', PREORDER_END_ISO:'2026-10-31T23:59:00+07:00', // ISO เช่น '2026-12-31T23:59:00+07:00' เพื่อเปิดตัวนับถอยหลัง/สถานะปิดรับ
+ PREORDER_START:'22/10/26', PREORDER_END:'31/10/26', PREORDER_END_ISO:CLOSING_ISO, // ISO เช่น '2026-12-31T23:59:00+07:00' เพื่อเปิดตัวนับถอยหลัง/สถานะปิดรับ
  SIZE_START:'01/11/26', SIZE_END:'07/11/26', MAP_URL:'https://maps.app.goo.gl/Jdky3j7RymwVwQtr7', DELIVERY_MONTH:'มกราคม 2027'
 };
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -371,12 +453,12 @@ rs();addEventListener('resize',()=>{rs();if(RM)dr()});dr()})();
 (function(){const el=$('#twt'),w='DIGITECH',sv=s=>{el.textContent=s;el.dataset.text=s};if(RM){sv(w);return}let i=0,d=1;(function t(){sv(w.slice(0,i));i+=d;if(i>w.length){d=-1;i=w.length;return setTimeout(t,1600)}if(i<0){d=1;i=0;return setTimeout(t,500)}setTimeout(t,d>0?140:70)})()})();
 
 /* ===== Hero: ขยาย DIGITECH ตามการเลื่อน แล้วค่อยเฟดเนื้อหาอื่นขึ้น ===== */
-const scene=$('#scene'),h1=$('#tw'),hp=$('#heroP'),ct=$('#content');let tk=false;
+const scene=$('#scene'),h1=$('#tw'),hp=$('#heroP'),cdH=$('#cdHero'),ct=$('#content');let tk=false;
 function onScroll(){tk=false;if(S.step!==0)return;if(!S.seen&&scrollY+innerHeight>=document.documentElement.scrollHeight-24){S.seen=true;$('#cta').classList.remove('h')}if(RM){ct.classList.add('on');return}
  const span=Math.max(1,scene.offsetHeight-innerHeight),p=Math.min(1,Math.max(0,scrollY)/span);
  h1.style.transform=p?`translateY(${-p*30}vh) scale(${1+p*8})`:'';
  h1.style.opacity=p<.7?1:Math.max(0,1-(p-.7)/.3);
- h1.classList.toggle('g0',p<.03);hp.style.opacity=Math.max(0,1-p*4);
+ h1.classList.toggle('g0',p<.03);hp.style.opacity=Math.max(0,1-p*4);cdH.style.opacity=hp.style.opacity;
  ct.classList.toggle('on',p>=.98)}
 addEventListener('scroll',()=>{if(!tk){tk=true;requestAnimationFrame(onScroll)}},{passive:true});addEventListener('resize',onScroll);onScroll();
 /* glitch เบา ๆ ทุก ~3.8 วินาที (เฉพาะตอนยังเห็นชื่ออยู่) */
@@ -389,10 +471,8 @@ $('#d1').textContent=CFG.PREORDER_START+' - '+CFG.PREORDER_END;$('#d2').textCont
 $('#d3').textContent='ประมาณ '+CFG.DELIVERY_MONTH+' (โดยประมาณ)';$('#map').href=CFG.MAP_URL;
 if($('#sheetLink')) $('#sheetLink').href = CFG.SHEET_URL || '#';
 $('#priceTxt').textContent=CFG.SHIRT_PRICE?CFG.SHIRT_PRICE+' บาท':'ราคาจะประกาศเร็ว ๆ นี้';
-const endMs=CFG.PREORDER_END_ISO?Date.parse(CFG.PREORDER_END_ISO):NaN;
-const isClosed=()=>!isNaN(endMs)&&Date.now()>endMs;
-function tickCd(){if(isNaN(endMs)){$('#cd').textContent='';return}const l=endMs-Date.now(),b=$('#badge');if(l<=0){b.textContent='ปิดรับแล้ว';b.classList.add('cl');$('#ctaBtn').disabled=true;$('#ctaBtn').textContent='ปิดรับพรีออเดอร์แล้ว';$('#cd').textContent='';return}const s=l/1000|0;$('#cd').textContent=`ปิดรับใน ${s/86400|0} วัน ${String(s%86400/3600|0).padStart(2,'0')}:${String(s%3600/60|0).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
-tickCd();setInterval(tickCd,1000);
+/* [v1.2.0] isClosed ใช้ CLOSING_TS; การแสดงผลนับถอยหลัง/สถานะทั้งหมดอยู่ใน tickState() ท้ายสคริปต์ */
+const isClosed=()=>!isNaN(CLOSING_TS)&&Date.now()>CLOSING_TS;
 /* สลับด้านเสื้อ */
 $$('[data-side]').forEach(b=>b.onclick=()=>{$$('[data-side]').forEach(x=>{x.classList.toggle('on',x===b);x.classList.toggle('ghost',x!==b)});const f=b.dataset.side==='front';$('#mockFront').classList.toggle('on',f);$('#mockBack').classList.toggle('on',!f);$$('[data-side]').forEach(x=>x.setAttribute('aria-pressed',x===b))});
 /* tilt เบา ๆ บนเดสก์ท็อป */
@@ -443,7 +523,7 @@ function calc(){const q=Math.max(0,Math.min(CFG.MAX_QTY,+F.qty.value||0)),e=(F.e
 calc();
 
 /* ===== นำทางระหว่างขั้น ===== */
-function go(n){S.step=n;[0,1,2,3,4].forEach(i=>{$('#v'+i).hidden=i!==n;const v=$('#v'+i);v.classList.remove('view');void v.offsetWidth;v.classList.add('view')});$$('#prog i').forEach((e,i)=>e.classList.toggle('on',i<n));$('#cta').classList.toggle('h',!(S.seen&&n===0));try{scrollTo({top:0,behavior:'instant'})}catch(_){scrollTo(0,0)}if(n!==3)clearInterval(S.timer);if(n===0)requestAnimationFrame(onScroll)}
+function go(n){S.step=n;[0,1,2,3,4].forEach(i=>{$('#v'+i).hidden=i!==n;const v=$('#v'+i);v.classList.remove('view');void v.offsetWidth;v.classList.add('view')});$$('#prog i').forEach((e,i)=>e.classList.toggle('on',i<n));$('#cta').classList.toggle('h',!(S.seen&&n===0));try{scrollTo({top:0,behavior:'instant'})}catch(_){scrollTo(0,0)}if(n!==3)clearInterval(S.timer);if(n===0)requestAnimationFrame(onScroll);updateBar()}
 const data=()=>({prefix:F.prefix.value,nameTh:F.th.value.trim(),nameEn:F.en.value.trim(),studentId:'B'+F.sid.value,major:F.major.value,aka:$('#akaOn').checked?F.aka.value.trim():'',embroidery:F.emb.value,qty:+F.qty.value,instagram:F.ig.value,phone:F.phone.value});
 $('#f').onsubmit=e=>{e.preventDefault();if(isClosed()){toast('ปิดรับพรีออเดอร์แล้ว',1);return}
  const bad=Object.keys(F).filter(k=>!chk(k,true));if(bad.length){F[bad[0]].scrollIntoView({block:'center',behavior:RM?'auto':'smooth'});F[bad[0]].focus({preventScroll:true});toast('กรุณากรอกข้อมูลให้ถูกต้องครบถ้วน',1);return}
@@ -537,6 +617,8 @@ $('#verify').onclick=async()=>{
   const o=S.order;if(!o)return;
   if(o.expiresAt<Date.now()){go(2);toast('QR หมดอายุ กดชำระเงินเพื่อสร้างออเดอร์ใหม่',1);return}
   if(!S.slip){toast('กรุณาแนบสลิปก่อน',1);return}
+  /* [v1.2.0] Late Slip Safeguard: เลยเวลาปิดรับ -> ต้องกดยอมรับใน Modal ก่อนส่งจริง (ไฟล์แนบได้ตามปกติ) */
+  if(isClosed()){if(S.modal)return;S.modal=true;const ok=await lateModal();S.modal=false;if(!ok||S.busy)return}
   S.busy=true;const b=$('#verify');b.disabled=true;b.innerHTML='<span class="spin"></span>กำลังส่งข้อมูล...';$('#res').innerHTML='';
   try{
     const r=await sendSlip(o),s=r&&r.status;
@@ -626,6 +708,44 @@ addEventListener('beforeunload',e=>{if(S.step===2||S.step===3){e.preventDefault(
 (function(){const m=$$('#mock img'),all=()=>{if(m.every(i=>i.dataset.bad))$('#mock').classList.add('noimg')};
  m.forEach(i=>{const bad=()=>{i.dataset.bad=1;all()};i.addEventListener('error',bad);if(i.complete&&!i.naturalWidth)bad()});
  const t=$('#tee img');if(t){const bad=()=>{$('#tee').textContent='DIGITECH'};t.addEventListener('error',bad);if(t.complete&&!t.naturalWidth)bad()}})();
+
+/* ============================================================================
+   v1.2.0 : Time-based State Controller  (OPEN -> URGENT <=4 ชม. -> CLOSED)
+   ============================================================================ */
+const pad2=n=>String(n).padStart(2,'0');
+const hms=s=>pad2(s/3600|0)+':'+pad2(s%3600/60|0)+':'+pad2(s%60);
+const phaseNow=()=>{const l=CLOSING_TS-Date.now();return l<0?'closed':l<=URGENT_MS?'urgent':'open'};
+let lastPh='';
+function setCd(sel,t){const e=$(sel);if(e.textContent!==t){e.textContent=t;e.dataset.text=t}}   // data-text ใช้วาดเลเยอร์ Glitch (::before/::after)
+function updateBar(){const on=lastPh==='urgent'&&S.step>=1;$('#cdBar').hidden=!on;document.body.classList.toggle('urg-bar',on)}   // แถบบนสุด: หน้าถัดไปเท่านั้น
+/* ปิดรับ: disable <input>/<select>/<textarea>/ปุ่ม +/- ทั้งหมดในฟอร์ม (ไม่ลบโครงสร้าง) */
+function lockForm(on){$$('#f input,#f select,#f textarea,#f .qty button').forEach(e=>e.disabled=on);if(!on)$('#aka').disabled=!$('#akaOn').checked}
+function applyPhase(ph){
+ const cl=ph==='closed',cta=$('#ctaBtn'),bd=$('#badge');
+ document.body.classList.toggle('st-urgent',ph==='urgent');document.body.classList.toggle('st-closed',cl);
+ $('#cdHero').hidden=ph!=='urgent';
+ cta.classList.toggle('urgent',ph==='urgent');cta.textContent=cl?'ดูข้อมูล (ปิดรับพรีออเดอร์แล้ว)':'สั่งจองเลย';
+ bd.textContent=cl?'ปิดรับแล้ว':'กำลังเปิดรับ';bd.classList.toggle('cl',cl);
+ lockForm(cl);$('#closedBox').hidden=!cl;$('#stampWrap').hidden=!cl;
+ $('#f button[type=submit]').hidden=cl;           // ซ่อนปุ่ม "ต่อไป" -> ไม่เข้าหน้าสรุปยอด/QR
+ if(!S.busy)$('#pay').disabled=cl;
+ updateBar()}
+function tickState(){
+ if(isNaN(CLOSING_TS)){$('#cd').textContent='';return}
+ const ph=phaseNow(),l=Math.max(0,CLOSING_TS-Date.now()),s=Math.ceil(l/1000);
+ if(ph!==lastPh){lastPh=ph;applyPhase(ph)}
+ if(ph==='urgent'){const t=hms(s);setCd('#cdHeroT',t);setCd('#cdBarT',t)}
+ $('#cd').textContent=ph==='closed'?'':'ปิดรับใน '+(s/86400|0)+' วัน '+hms(s%86400)}
+$('#sheetLink2').href=CFG.SHEET_URL||'#';
+tickState();setInterval(tickState,250);
+
+/* ===== Modal เตือนส่งสลิปเกินเวลา (คืนค่า Promise<boolean>) ===== */
+function lateModal(){return new Promise(res=>{
+ const m=$('#lateModal'),y=$('#lateYes'),n=$('#lateNo'),prev=document.activeElement;
+ const kd=e=>{if(e.key==='Escape'){e.preventDefault();done(false)}else if(e.key==='Tab'){e.preventDefault();const f=[n,y],i=f.indexOf(document.activeElement);f[(i+(e.shiftKey?-1:1)+2)%2].focus()}};
+ const done=v=>{m.hidden=true;y.onclick=n.onclick=null;document.removeEventListener('keydown',kd,true);if(prev&&prev.focus)prev.focus();res(v)};
+ y.onclick=()=>done(true);n.onclick=()=>done(false);document.addEventListener('keydown',kd,true);
+ m.hidden=false;n.focus()})}
 </script>
 </body>
 </html>
